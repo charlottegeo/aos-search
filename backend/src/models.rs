@@ -1,27 +1,28 @@
 use sqlx::FromRow;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, FromRow, Debug)]
-struct Season {
+#[derive(Clone, FromRow, Debug, Deserialize, Serialize)]
+pub struct Season {
     pub id: i64,
     pub number: i32,
 }
 
-#[derive(Clone, FromRow, Debug)]
-struct Episode {
+#[derive(Clone, FromRow, Debug, Deserialize, Serialize)]
+pub struct Episode {
     pub id: i64,
     pub season_id: i64,
     pub number: i32,
     pub title: String,
 }
 
-#[derive(Clone, FromRow, Debug)]
-struct Speaker {
+#[derive(Clone, FromRow, Debug, Deserialize, Serialize)]
+pub struct Speaker {
     pub id: i64,
     pub name: String,
 }
 
-#[derive(Clone, FromRow, Debug)]
-struct Line {
+#[derive(Clone, FromRow, Debug, Deserialize, Serialize)]
+pub struct Line {
     pub id: i64,
     pub season_id: i64,
     pub episode_id: i64,
