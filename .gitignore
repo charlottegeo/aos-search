@@ -2,6 +2,7 @@ target/
 debug/
 Cargo.lock
 .env
-venv/
-Seasons/
 transcript.db
+transcript.db-wal
+transcript.db-shm
+Seasons/
