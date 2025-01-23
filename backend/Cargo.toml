@@ -4,7 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-diesel = { version = "2.2.6", features = ["sqlite"] }
-dotenvy = "0.15.7"
-rocket = "0.5.1"
-sqlite = "0.36.1"
+sqlx = {version = "0.8.3", features = ["runtime-tokio-native-tls", "sqlite"]}
+tokio = {version = "1.43.0", features = ["macros", "full", "rt-multi-thread"]}
