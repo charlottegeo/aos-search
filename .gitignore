@@ -3,6 +3,9 @@ debug/
 Cargo.lock
 .env
 transcript.db
-transcript.db-wal
-transcript.db-shm
+*-shm
+*-wal
+ipaddr.dylib
+ipaddr.so
+.sqlx
 Seasons/
