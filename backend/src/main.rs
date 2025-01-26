@@ -2,6 +2,7 @@ mod db;
 mod models;
 mod api;
 
+use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use db::setup_database;
 use api::init_routes;
@@ -15,6 +16,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_pool = db::get_pool().await?;
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allow_any_method()
+                    .allow_any_header(),
+            )
             .app_data(web::Data::new(db_pool.clone()))
             .configure(init_routes)
     })
