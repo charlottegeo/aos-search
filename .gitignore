@@ -2,13 +2,10 @@ target/
 debug/
 Cargo.lock
 .env
-transcript.db
 *-shm
 *-wal
 ipaddr.dylib
 ipaddr.so
-.sqlx
-Seasons/
 logs
 *.log
 npm-debug.log*
@@ -16,7 +13,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
 node_modules
 dist
 dist-ssr

@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS lines (
     CONSTRAINT unique_season_episode_line UNIQUE (season_id, episode_id, line_number)
 );
 
+CREATE TABLE IF NOT EXISTS metadata (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    line_id INTEGER NOT NULL REFERENCES lines(id),
+    sentiment TEXT,
+    tone TEXT,
+    primary_emotion TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_episodes_season_id ON episodes(season_id);
 CREATE INDEX IF NOT EXISTS idx_lines_season_id ON lines(season_id);
 CREATE INDEX IF NOT EXISTS idx_lines_episode_id ON lines(episode_id);
