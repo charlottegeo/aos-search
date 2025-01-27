@@ -31,6 +31,15 @@ pub struct Line {
     pub content: String,
 }
 
+#[derive(Clone, FromRow, Debug, Deserialize, Serialize)]
+pub struct Metadata {
+    pub id: i64,
+    pub line_id: i64,
+    pub sentiment: String,
+    pub tone: String,
+    pub primary_emotion: String,
+}
+
 //This is just to handle the random line endpoint
 #[derive(Deserialize)]
 pub struct RandomLineQuery {

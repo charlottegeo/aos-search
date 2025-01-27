@@ -55,6 +55,7 @@ async fn get_random_line(db: web::Data<SqlitePool>, query: web::Query<RandomLine
 
 
 
+//TODO: Change it to ids instead of numbers
 #[get("/transcripts/{season_num}/{episode_num}")]
 async fn get_transcript(db: web::Data<SqlitePool>, path: web::Path<(i64, i32)>) -> impl Responder {
     let (season_num, episode_num) = path.into_inner();

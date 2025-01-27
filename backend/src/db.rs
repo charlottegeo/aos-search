@@ -1,23 +1,21 @@
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use std::env;
-pub async fn setup_database() -> Result<(), Box<dyn std::error::Error>> {
-    let database_url = env::var("DATABASE_URL")?;
+use std::{fs, path::Path};
 
-    if !Sqlite::database_exists(&database_url).await.unwrap_or(false) {
-        println!("Creating database {}", database_url);
-        match Sqlite::create_database(&database_url).await {
-            Ok(_) => println!("Create db success"),
-            Err(error) => panic!("error: {}", error),
-        }
-    } else {
-        println!("Database already exists");
+pub async fn setup_database(database_url: &str, schema_path: &str) -> Result<SqlitePool, Box<dyn std::error::Error>> {
+    let path = Path::new(database_url.strip_prefix("sqlite:").unwrap_or(database_url));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).unwrap_or_else(|err| {
+            panic!("Failed to create parent directory: {}", err);
+        });
     }
+    let db = SqlitePool::connect(database_url).await?;
+    let schema = std::fs::read_to_string(schema_path)?;
+    sqlx::query(&schema).execute(&db).await?;
 
-    let db = get_pool().await?;
-    let sql = include_str!("../schema.sql");
-    sqlx::query(&sql).execute(&db).await.unwrap();
-    Ok(())
-} 
+    Ok(db)
+}
+
 
 pub async fn get_pool() -> Result<SqlitePool, sqlx::Error> {
     let database_url = env::var("DATABASE_URL").map_err(|e| {
