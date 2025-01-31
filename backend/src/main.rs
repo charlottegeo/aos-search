@@ -1,26 +1,45 @@
-mod db;
-mod models;
 mod api;
+mod db;
 mod file_parser;
+mod models;
 
+use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
-use db::setup_database;
 use api::init_routes;
 use dotenv::dotenv;
-use std::env;
+use sqlx::SqlitePool;
+use std::collections::HashMap;
+use std::path::Path;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
+pub type DatabaseRegistry = Arc<Mutex<HashMap<String, SqlitePool>>>;
+
+use std::fs;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./transcripts.db".to_string());
-    let schema_path = env::var("SCHEMA_PATH").unwrap_or_else(|_| "./schema.sql".to_string());
+    let schema_path = "./schema.sql".to_string();
+    let db_registry: DatabaseRegistry = Arc::new(Mutex::new(HashMap::new()));
 
-    let db_pool = setup_database(&database_url, &schema_path).await?;
+    if Path::new("./temp_dbs").exists() {
+        if let Err(err) = fs::remove_dir_all("./temp_dbs") {
+            eprintln!("Failed to clean up temp_dbs directory: {}", err);
+        }
+    }
+    fs::create_dir_all("./temp_dbs")?;
 
-    file_parser::process_seasons(&db_pool).await?;
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_method()
+            .allow_any_header();
+
         App::new()
-            .app_data(web::Data::new(db_pool.clone()))
+            .wrap(cors)
+            .app_data(web::Data::new(db_registry.clone())) // Registry with SqlitePool
+            .app_data(web::Data::new(schema_path.clone())) // Schema Path
             .configure(init_routes)
     })
     .bind("127.0.0.1:8081")?

@@ -1,26 +1,49 @@
-use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
-use std::env;
-use std::{fs, path::Path};
+use lazy_static::lazy_static;
+use sqlx::migrate::MigrateDatabase;
+use sqlx::{Sqlite, SqlitePool};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use tokio::fs;
+use tokio::sync::Mutex;
 
-pub async fn setup_database(database_url: &str, schema_path: &str) -> Result<SqlitePool, Box<dyn std::error::Error>> {
-    let path = Path::new(database_url.strip_prefix("sqlite:").unwrap_or(database_url));
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).unwrap_or_else(|err| {
-            panic!("Failed to create parent directory: {}", err);
-        });
-    }
-    let db = SqlitePool::connect(database_url).await?;
-    let schema = std::fs::read_to_string(schema_path)?;
-    sqlx::query(&schema).execute(&db).await?;
-
-    Ok(db)
+lazy_static! {
+    static ref DB_CACHE: Mutex<HashMap<String, SqlitePool>> = Mutex::new(HashMap::new());
 }
 
+pub async fn setup_database(
+    user_id: &str,
+    schema_path: &str,
+) -> Result<(SqlitePool, PathBuf), Box<dyn std::error::Error>> {
+    let db_path = Path::new("./temp_dbs").join(format!("{}.sqlite", user_id));
+    fs::create_dir_all("./temp_dbs").await?;
 
-pub async fn get_pool() -> Result<SqlitePool, sqlx::Error> {
-    let database_url = env::var("DATABASE_URL").map_err(|e| {
-        sqlx::Error::Configuration(e.into())
-    })?;
-    let db = SqlitePool::connect(&database_url).await?;
-    Ok(db)
+    let database_url = format!("sqlite://{}", db_path.to_string_lossy());
+    {
+        let cache = DB_CACHE.lock().await;
+        if let Some(pool) = cache.get(&database_url) {
+            return Ok((pool.clone(), db_path));
+        }
+    }
+
+    let db_pool = if !Sqlite::database_exists(&database_url)
+        .await
+        .unwrap_or(false)
+    {
+        Sqlite::create_database(&database_url).await?;
+        println!("Database created for user: {}", user_id);
+
+        let pool = SqlitePool::connect(&database_url).await?;
+        let schema = tokio::fs::read_to_string(schema_path).await?;
+        sqlx::query(&schema).execute(&pool).await?;
+
+        pool
+    } else {
+        SqlitePool::connect(&database_url).await?
+    };
+    DB_CACHE
+        .lock()
+        .await
+        .insert(database_url.clone(), db_pool.clone());
+
+    Ok((db_pool, db_path))
 }
